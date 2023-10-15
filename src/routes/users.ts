@@ -222,4 +222,27 @@ router.put('/users/:id', async (req: Request, res: Response) => {
     }
 });
 
+router.delete("/users/:id", async (req: Request, res: Response) => {
+    try {
+        const userId: any = req.params.id;
+        if (isNaN(userId)) {
+            throw new Error("customError: Invalid Id!");
+        }
+
+        const sql = `DELETE FROM ${db.tableName.users} WHERE id = ?;`;
+        const result = await db.query(sql, userId) as mysql.ResultSetHeader;
+
+        res.status(200).json({
+            message: `User (#${result.insertId}) has been deleted!`,
+            a: sql
+        });
+
+    } catch (error) {
+        res.status(400).json({
+            message: "Request denied! Check that there are no incorrectly id!",
+            a: String(error)
+        });
+    }
+});
+
 export default router;
