@@ -31,4 +31,16 @@ async function query(sql: string, values?: (string | number)[]) {
     return rows;
 }
 
-export default { query, tableName };
+// check if error string includes duplicate entry ocurrence and return duplicate column name;
+function hasStringDuplicatedKeys(errorString: string, table: string): string | null {
+    if (errorString.includes("Duplicate entry")) {
+        const keyNamePos = errorString.indexOf(`for key '${table}.`);
+        let columnName = errorString.substring(keyNamePos, errorString.length).split(" ")[2];
+        
+        return columnName.replace(/\'/g, "").split(".")[1]; 
+    }
+
+    return null;
+} 
+
+export default { query, hasStringDuplicatedKeys, tableName };
