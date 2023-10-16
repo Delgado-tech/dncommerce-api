@@ -18,6 +18,7 @@ router.get('/users', async (req: Request, res: Response) => {
         res.status(400).json({
             message: "Something went Wrong!"
         });
+        console.log(error)
     }
 });
 
@@ -174,8 +175,8 @@ router.put('/users/:id', async (req: Request, res: Response) => {
                 updateString += ", ";
             }
 
-            updateArray.push(key);
-            updateString += `${Object.keys(updatedValues)[index].replace("tr_", "")} = ?`;
+            updateArray.push(Object.values(updatedValues)[index]);
+            updateString += `${key.replace("tr_", "")} = ?`;
         });
 
         if (updateArray.length === 0) {
@@ -183,6 +184,8 @@ router.put('/users/:id', async (req: Request, res: Response) => {
         }
 
         const sql = String(`UPDATE ${db.tableName.users} SET <updateString> WHERE id = ${userId};`).replace("<updateString>", updateString);
+        console.log(sql)
+        console.log(updateArray)
         const result = await db.query(sql, updateArray) as mysql.ResultSetHeader;
 
         res.status(200).json({

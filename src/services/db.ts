@@ -31,4 +31,16 @@ async function query(sql: string, values?: (string | number)[]) {
     return rows;
 }
 
-export default { query, tableName };
+async function hasDuplicatedKeys(errorString: string, table: string, columns: string[]): Promise<string | undefined> {
+    if (errorString.includes("Duplicate entry")) {
+        for (let column of columns) {
+            if (errorString.includes(`${table}.${column}`)) {
+                return column;
+            }
+        }
+
+        return ""
+    }
+} 
+
+export default { query, hasDuplicatedKeys, tableName };
