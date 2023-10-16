@@ -5,6 +5,7 @@ import validator from 'validator';
 import { TransformType, textTransform } from 'text-transform';
 import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 import bcrypt from 'bcrypt';
+import { errorHandler } from '../handlers/errorHandler';
 
 const router = express.Router();
 
@@ -15,10 +16,7 @@ router.get('/users', async (req: Request, res: Response) => {
             data: result
         });
     } catch (error) {
-        res.status(400).json({
-            message: "Something went Wrong!"
-        });
-        console.log(error)
+        await errorHandler(res, String(error));
     }
 });
 
@@ -36,9 +34,7 @@ router.get('/users/:id', async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        res.status(400).json({
-            message: String(error)
-        });
+        await errorHandler(res, String(error));
     }
 
 });
@@ -83,33 +79,16 @@ router.post('/users', async (req: Request, res: Response) => {
         });
     } catch (error) {
 
-        if (String(error).includes("Duplicate entry")) {
-            if (String(error).includes("users.cpf")) {
-                res.status(400).json({
-                    message: String("This cpf is already in use!"),
-                });
-
-            } else if (String(error).includes("users.email")) {
-                res.status(400).json({
-                    message: String("This email is already in use!")
-                });
-
-            }
-
-            return;
+        const dupKey = db.hasStringDuplicatedKeys(String(error), db.tableName.users);
+        if (dupKey) {
+            return await errorHandler(res, `customError: The entry key '${dupKey}' already exists!`);
         }
 
-        if (String(error).includes("customError: ")) {
-            res.status(400).json({
-                message: String(error).replace("customError: ", "")
-            });
-
-            return;
+        if (String(error).includes("Data truncated")) {
+            return await errorHandler(res, "customError: Request denied! Check that there are no incorrectly filled values!", 400, "");
         }
 
-        res.status(400).json({
-            message: "Request denied! Check that there are no incorrectly filled values!"
-        });
+        await errorHandler(res, String(error));
     }
 });
 
@@ -123,7 +102,22 @@ router.put('/users/:id', async (req: Request, res: Response) => {
         const { name, cpf, email, pass, gender, access_level } = req.body;
 
 
-        let tr_name = name ? textTransform(name, TransformType.title).trim() : undefined;
+        let tr_name = name ? textTransform(String(name), TransformType.title).trim() : undefined;
+
+        if (tr_name !== undefined) {
+            if (tr_name === '') {
+                throw new Error("customError: Name can't be empty!");
+            }
+
+            if (tr_name.length < 3) {
+                throw new Error("customError: Name must contain a minimum of 3 characters!");
+            }
+
+            if (/^[A-Za-z\s]*$/.test(tr_name) === false) {
+                throw new Error("customError: Name must contain only letters and spaces!");
+            }
+
+        }
 
         let tr_cpf = cpf ? String(cpf).replace(/\D/g, '') : undefined;
         if (tr_cpf !== undefined) {
@@ -183,45 +177,24 @@ router.put('/users/:id', async (req: Request, res: Response) => {
             throw new Error("customError: You must enter a valid value to be changed!");
         }
 
-        const sql = String(`UPDATE ${db.tableName.users} SET <updateString> WHERE id = ${userId};`).replace("<updateString>", updateString);
-        console.log(sql)
-        console.log(updateArray)
-        const result = await db.query(sql, updateArray) as mysql.ResultSetHeader;
-
+        const sql = String(`UPDATE ${db.tableName.users} SET <updateString>, updated_at = NOW() WHERE id = ${userId};`).replace("<updateString>", updateString);
+        await db.query(sql, updateArray);
+        
         res.status(200).json({
-            message: `User (#${result.insertId}) has been created!`,
-            a: sql
+            message: `User (#${userId}) has been updated!`,
         });
     } catch (error) {
 
-        if (String(error).includes("Duplicate entry")) {
-            if (String(error).includes("users.cpf")) {
-                res.status(400).json({
-                    message: String("This cpf is already in use!"),
-                });
-
-            } else if (String(error).includes("users.email")) {
-                res.status(400).json({
-                    message: String("This email is already in use!")
-                });
-
-            }
-
-            return;
+        const dupKey = db.hasStringDuplicatedKeys(String(error), db.tableName.users);
+        if (dupKey) {
+            return await errorHandler(res, `customError: The entry key '${dupKey}' already exists!`);
         }
 
-        if (String(error).includes("customError: ")) {
-            res.status(400).json({
-                message: String(error).replace("customError: ", "")
-            });
-
-            return;
+        if (String(error).includes("Data truncated")) {
+            return await errorHandler(res, "customError: Request denied! Check that there are no incorrectly filled values!", 400, "");
         }
 
-        res.status(400).json({
-            message: "Request denied! Check that there are no incorrectly filled values!",
-            a: String(error)
-        });
+        await errorHandler(res, String(error));
     }
 });
 
@@ -241,10 +214,7 @@ router.delete("/users/:id", async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        res.status(400).json({
-            message: "Request denied! Check that there are no incorrectly id!",
-            a: String(error)
-        });
+        await errorHandler(res, String(error));
     }
 });
 

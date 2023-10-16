@@ -31,16 +31,16 @@ async function query(sql: string, values?: (string | number)[]) {
     return rows;
 }
 
-async function hasDuplicatedKeys(errorString: string, table: string, columns: string[]): Promise<string | undefined> {
+// check if error string includes duplicate entry ocurrence and return duplicate column name;
+function hasStringDuplicatedKeys(errorString: string, table: string): string | null {
     if (errorString.includes("Duplicate entry")) {
-        for (let column of columns) {
-            if (errorString.includes(`${table}.${column}`)) {
-                return column;
-            }
-        }
-
-        return ""
+        const keyNamePos = errorString.indexOf(`for key '${table}.`);
+        let columnName = errorString.substring(keyNamePos, errorString.length).split(" ")[2];
+        
+        return columnName.replace(/\'/g, "").split(".")[1]; 
     }
+
+    return null;
 } 
 
-export default { query, hasDuplicatedKeys, tableName };
+export default { query, hasStringDuplicatedKeys, tableName };
