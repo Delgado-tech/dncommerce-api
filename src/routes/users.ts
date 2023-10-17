@@ -25,7 +25,7 @@ router.get('/users/:id', async (req: Request, res: Response) => {
         const userId: any = req.params.id;
 
         if (isNaN(userId)) {
-            throw new Error("Invalid Id");
+            throw new Error("customError: Invalid Id!");
         }
 
         const result = await db.query(`SELECT * FROM ${db.tableName.users} WHERE id = ${userId} LIMIT 1;`);
