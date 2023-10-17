@@ -48,9 +48,9 @@ router.post('/users', async (req: Request, res: Response) => {
         }
 
         const result = await db.query(`INSERT INTO ${db.tableName.users}(name, cpf, email, pass, gender, access_level) 
-            values(?, ?, ?, ?, ?, ?)`, postValues ) as mysql.ResultSetHeader;
+            VALUES(?, ?, ?, ?, ?, ?)`, postValues ) as mysql.ResultSetHeader;
         
-        res.status(200).json({
+        res.status(201).json({
             message: `User (#${result.insertId}) has been created!`
         });
     } catch (error) {
@@ -124,8 +124,8 @@ router.delete("/users/:id", async (req: Request, res: Response) => {
             throw new Error("customError: Invalid Id!");
         }
 
-        const sql = `DELETE FROM ${db.tableName.users} WHERE id = ?;`;
-        const result = await db.query(sql, userId) as mysql.ResultSetHeader;
+        const sql = `DELETE FROM ${db.tableName.users} WHERE id = ${userId};`;
+        const result = await db.query(sql) as mysql.ResultSetHeader;
 
         res.status(200).json({
             message: `User (#${result.insertId}) has been deleted!`,
@@ -141,7 +141,7 @@ async function userDataProcessing(req: Request) {
     const { name, cpf, email, pass, gender, access_level } = req.body;
 
 
-    let tr_name = name ? textTransform(String(name), TransformType.title).trim() : undefined;
+    const tr_name = name ? textTransform(String(name), TransformType.title).trim() : undefined;
 
     if (tr_name !== undefined) {
         if (tr_name === '') {
@@ -166,7 +166,7 @@ async function userDataProcessing(req: Request) {
         tr_cpf = cpfValidator.format(tr_cpf);
     }
 
-    let tr_email = email ? String(email).toLowerCase() : undefined;
+    const tr_email = email ? String(email).toLowerCase() : undefined;
     if (tr_email !== undefined) {
         if (!validator.isEmail(tr_email)) {
             throw new Error("customError: Invalid Email!");
