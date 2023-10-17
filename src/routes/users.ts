@@ -41,38 +41,14 @@ router.get('/users/:id', async (req: Request, res: Response) => {
 
 router.post('/users', async (req: Request, res: Response) => {
     try {
-        const { name, cpf, email, pass, gender, access_level } = req.body;
+        const postValues = Object.values(await userDataProcessing(req));
 
-        let tr_name = textTransform(name, TransformType.title).trim();
-
-        let tr_cpf = String(cpf).replace(/\D/g, '');
-        if(!cpfValidator.isValid(tr_cpf)) {
-            throw new Error("customError: Invalid Cpf!");
-        }
-        tr_cpf = cpfValidator.format(tr_cpf);
-
-        let tr_email = String(email).toLowerCase();
-        if (!validator.isEmail(tr_email)) {
-            throw new Error("customError: Invalid Email!");
-        }
-
-        if (String(pass).length > 32 ||  String(pass).length < 8) {
-            throw new Error("customError: Invalid Password! The password must contain a minimum of 8 characters and a maximum of 32");
-        }
-        const tr_pass = bcrypt.hashSync(pass, 10);
-
-        let tr_gender: string | null = String(gender).toUpperCase();
-        if (tr_gender !== "M" && tr_gender !== "F") {
-            tr_gender = null;
-        }
-
-        let tr_access_level = access_level;
-        if(access_level < 1 || access_level > 4) {
-            tr_access_level = 1;
+        if (postValues.includes(undefined)) {
+            throw new Error("customError: There are empty or missing fields, fill in or add them!");
         }
 
         const result = await db.query(`INSERT INTO ${db.tableName.users}(name, cpf, email, pass, gender, access_level) 
-            values(?, ?, ?, ?, ?, ?)`, [ tr_name, tr_cpf, tr_email, tr_pass, tr_gender, tr_access_level ] ) as mysql.ResultSetHeader;
+            values(?, ?, ?, ?, ?, ?)`, postValues ) as mysql.ResultSetHeader;
         
         res.status(200).json({
             message: `User (#${result.insertId}) has been created!`
@@ -98,66 +74,9 @@ router.put('/users/:id', async (req: Request, res: Response) => {
         if (isNaN(userId)) {
             throw new Error("customError: Invalid Id!");
         }
-
-        const { name, cpf, email, pass, gender, access_level } = req.body;
-
-
-        let tr_name = name ? textTransform(String(name), TransformType.title).trim() : undefined;
-
-        if (tr_name !== undefined) {
-            if (tr_name === '') {
-                throw new Error("customError: Name can't be empty!");
-            }
-
-            if (tr_name.length < 3) {
-                throw new Error("customError: Name must contain a minimum of 3 characters!");
-            }
-
-            if (/^[A-Za-z\s]*$/.test(tr_name) === false) {
-                throw new Error("customError: Name must contain only letters and spaces!");
-            }
-
-        }
-
-        let tr_cpf = cpf ? String(cpf).replace(/\D/g, '') : undefined;
-        if (tr_cpf !== undefined) {
-            if(!cpfValidator.isValid(tr_cpf)) {
-                throw new Error("customError: Invalid Cpf!");
-            }
-            tr_cpf = cpfValidator.format(tr_cpf);
-        }
-
-        let tr_email = email ? String(email).toLowerCase() : undefined;
-        if (tr_email !== undefined) {
-            if (!validator.isEmail(tr_email)) {
-                throw new Error("customError: Invalid Email!");
-            }
-        }
-
-        const tr_pass = pass ? bcrypt.hashSync(pass, 10) : undefined;
-        if (tr_pass !== undefined) {
-            if (String(pass).length > 32 ||  String(pass).length < 8) {
-                throw new Error("customError: Invalid Password! The password must contain a minimum of 8 characters and a maximum of 32");
-            }
-        }
         
+        const updatedValues = await userDataProcessing(req);
 
-        let tr_gender: any = gender !== undefined ? String(gender).toUpperCase() : undefined;
-        if (tr_gender !== undefined) {
-            if (tr_gender !== "M" && tr_gender !== "F") {
-                tr_gender = null;
-            }
-        }
-        
-        let tr_access_level = access_level;
-        if (tr_access_level !== undefined) {
-            if(access_level < 1 || access_level > 4) {
-                tr_access_level = 1;
-            }
-        }
-
-        const updatedValues = {tr_name, tr_cpf, tr_email, tr_pass, tr_gender, tr_access_level};
-        
         let updateArray: (string | number)[] = [];
         let updateString = "";
         Object.keys(updatedValues).forEach((key, index) => {
@@ -217,5 +136,66 @@ router.delete("/users/:id", async (req: Request, res: Response) => {
         await errorHandler(res, String(error));
     }
 });
+
+async function userDataProcessing(req: Request) {
+    const { name, cpf, email, pass, gender, access_level } = req.body;
+
+
+    let tr_name = name ? textTransform(String(name), TransformType.title).trim() : undefined;
+
+    if (tr_name !== undefined) {
+        if (tr_name === '') {
+            throw new Error("customError: Name can't be empty!");
+        }
+
+        if (tr_name.length < 3) {
+            throw new Error("customError: Name must contain a minimum of 3 characters!");
+        }
+
+        if (/^[A-zÀ-ú\s]*$/.test(tr_name) === false) {
+            throw new Error("customError: Name must contain only letters and spaces!");
+        }
+
+    }
+
+    let tr_cpf = cpf ? String(cpf).replace(/\D/g, '') : undefined;
+    if (tr_cpf !== undefined) {
+        if(!cpfValidator.isValid(tr_cpf)) {
+            throw new Error("customError: Invalid Cpf!");
+        }
+        tr_cpf = cpfValidator.format(tr_cpf);
+    }
+
+    let tr_email = email ? String(email).toLowerCase() : undefined;
+    if (tr_email !== undefined) {
+        if (!validator.isEmail(tr_email)) {
+            throw new Error("customError: Invalid Email!");
+        }
+    }
+
+    const tr_pass = pass ? bcrypt.hashSync(pass, 10) : undefined;
+    if (tr_pass !== undefined) {
+        if (String(pass).length > 32 ||  String(pass).length < 8) {
+            throw new Error("customError: Invalid Password! The password must contain a minimum of 8 characters and a maximum of 32");
+        }
+    }
+    
+
+    let tr_gender: any = gender !== undefined ? String(gender).toUpperCase() : undefined;
+    if (tr_gender !== undefined) {
+        if (tr_gender !== "M" && tr_gender !== "F") {
+            tr_gender = null;
+        }
+    }
+    
+    let tr_access_level = access_level;
+    if (tr_access_level !== undefined) {
+        if(access_level < 1 || access_level > 4) {
+            tr_access_level = 1;
+        }
+    }
+
+    return {tr_name, tr_cpf, tr_email, tr_pass, tr_gender, tr_access_level};
+}
 
 export default router;
