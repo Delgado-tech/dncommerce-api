@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-router.post("/login/:email/:password", async (req: Request, res: Response) => {
+router.post("/regenerate_token/:email/:password", async (req: Request, res: Response) => {
     try {
         const email = req.params.email;
         const password = req.params.password;
@@ -16,11 +16,9 @@ router.post("/login/:email/:password", async (req: Request, res: Response) => {
             throw new Error("customError: Invalid email or password!");
         }
 
-        const token_timestamp = user[0].token_timestamp ? Number(user[0].token_timestamp) : new Date().valueOf();
+        const token_timestamp = new Date().valueOf();
 
-        if (user[0].token_timestamp === null) {
-            await db.query(`UPDATE ${db.tableName.users} SET token_timestamp = ${token_timestamp} WHERE id = ${user[0].id};`);
-        }
+        await db.query(`UPDATE ${db.tableName.users} SET token_timestamp = ${token_timestamp} WHERE id = ${user[0].id};`);
 
         const token = jwt.sign({
             token: user[0].id,
@@ -33,7 +31,6 @@ router.post("/login/:email/:password", async (req: Request, res: Response) => {
 
 
     } catch (error) {
-        console.log(error)
         await errorHandler(res, String(error));
     }
 });
