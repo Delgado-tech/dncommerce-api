@@ -3,6 +3,7 @@ import usersRouter from './routes/users';
 import productsRouter from './routes/products';
 import requestsRouter from './routes/requests';
 import paymentStatusRouter from './routes/paymentStatus';
+import loginRouter from './routes/login';
 import cookieParse from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -21,6 +22,7 @@ app.get("/", async (req: Request, res: Response) => {
     res.status(200).json({"message": "ok"});
 });
 
+app.use(loginRouter);
 app.use(usersRouter);
 app.use(productsRouter);
 app.use(requestsRouter);

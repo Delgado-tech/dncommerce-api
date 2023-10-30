@@ -1,10 +1,7 @@
 import express, { Request, Response } from 'express';
 import db from '../services/db';
 import mysql from 'mysql2';
-import { format as dateFormat } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { errorHandler } from '../handlers/errorHandler';
-import { clamp } from '../utils/mathF';
 import { TransformType, textTransform } from 'text-transform';
 
 const router = express.Router();
