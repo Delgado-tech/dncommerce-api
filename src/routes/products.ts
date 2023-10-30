@@ -3,13 +3,14 @@ import db from '../services/db';
 import mysql from 'mysql2';
 import { TransformType, textTransform } from 'text-transform';
 import { errorHandler } from '../handlers/errorHandler';
+import { clamp } from '../utils/mathF';
 
 const router = express.Router();
 
 router.get('/products', async (req: Request, res: Response) => {
     try {
         const result = await db.query(`SELECT * FROM ${db.tableName.products};`);
-        res.json(200).json({
+        res.status(200).json({
             data: result
         });
 
@@ -26,7 +27,7 @@ router.get('/products/:id', async (req: Request, res: Response) => {
         }
 
         const result = await db.query(`SELECT * FROM ${db.tableName.products} WHERE id = ${productId} LIMIT 1;`);
-        res.json(200).json({
+        res.status(200).json({
             data: result
         });
 
@@ -43,7 +44,7 @@ router.post('/products', async (req: Request, res: Response) => {
             throw new Error("customError: There are empty or missing fields, fill in or add them!");
         }
 
-        const result = await db.query(`INSERTO INTO ${db.tableName.products}(name, description, price, discount, stock) 
+        const result = await db.query(`INSERT INTO ${db.tableName.products}(name, description, price, discount, stock) 
             VALUES(?, ?, ?, ?, ?);`, postValues) as mysql.ResultSetHeader;
 
         res.status(200).json({
@@ -51,7 +52,7 @@ router.post('/products', async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        const dupKey = db.hasStringDuplicatedKeys(String(error), db.tableName.users);
+        const dupKey = db.hasStringDuplicatedKeys(String(error), db.tableName.products);
         if (dupKey) {
             return await errorHandler(res, `customError: The entry key '${dupKey}' already exists!`);
         }
@@ -92,8 +93,12 @@ router.put('/products/:id', async (req: Request, res: Response) => {
             throw new Error("customError: You must enter a valid value to be changed!");
         }
 
-        const sql = String(`UPDATE ${db.tableName.products} SET <updateString>, updated_at = NOW() WHERE id = ${productId};`).replace("<updateString>", updateString);
-        await db.query(sql, updateArray);
+        const sql = String(`UPDATE ${db.tableName.products} SET <updateString> WHERE id = ${productId};`).replace("<updateString>", updateString);
+        const result = await db.query(sql, updateArray) as mysql.ResultSetHeader;
+
+        if (result.affectedRows <= 0) {
+            throw new Error("customError: Product not found!");
+        }
         
         res.status(200).json({
             message: `Product (#${productId}) has been updated!`,
@@ -124,9 +129,12 @@ router.delete('/products/:id', async (req: Request, res: Response) => {
         const sql = `DELETE FROM ${db.tableName.products} WHERE id = ${productId};`;
         const result = await db.query(sql) as mysql.ResultSetHeader;
 
+        if (result.affectedRows <= 0) {
+            throw new Error("customError: Product not found!");
+        }
+
         res.status(200).json({
-            message: `Product (#${result.insertId}) has been deleted!`,
-            a: sql
+            message: `Product (#${productId}) has been deleted!`,
         });
 
     } catch (error) {
@@ -155,23 +163,25 @@ async function productDataProcessing(req: Request) {
     const tr_price = price ? price : undefined;
 
     if (tr_price !== undefined) {
-        if (isNaN(tr_price)) {
+        if (isNaN(tr_price) || tr_price < 0) {
             throw new Error("customError: Invalid Price!");
         }
     }
 
-    const tr_discount = discount ? discount : undefined;
+    let tr_discount = discount ? discount : undefined;
 
     if (tr_discount !== undefined) {
         if (isNaN(tr_discount)) {
             throw new Error("customError: Invalid Discount!");
         }
+
+        tr_discount = clamp(tr_discount, 0, 100);
     }
 
     const tr_stock = stock ? stock : undefined;
 
     if (tr_stock !== undefined) {
-        if (isNaN(tr_stock)) {
+        if (isNaN(tr_stock) || tr_stock < 0) {
             throw new Error("customError: Invalid Stock!");
         }
     }

@@ -97,7 +97,11 @@ router.put('/users/:id', async (req: Request, res: Response) => {
         }
 
         const sql = String(`UPDATE ${db.tableName.users} SET <updateString>, updated_at = NOW() WHERE id = ${userId};`).replace("<updateString>", updateString);
-        await db.query(sql, updateArray);
+        const result = await db.query(sql, updateArray) as mysql.ResultSetHeader;
+
+        if (result.affectedRows <= 0) {
+            throw new Error("customError: User not found!");
+        }
         
         res.status(200).json({
             message: `User (#${userId}) has been updated!`,
@@ -127,9 +131,14 @@ router.delete("/users/:id", async (req: Request, res: Response) => {
         const sql = `DELETE FROM ${db.tableName.users} WHERE id = ${userId};`;
         const result = await db.query(sql) as mysql.ResultSetHeader;
 
+        if (result.affectedRows <= 0) {
+            throw new Error("customError: User not found!");
+        }
+
+        await db.query(`DELETE FROM ${db.tableName.requests} WHERE user_id = ${userId}`);
+        
         res.status(200).json({
-            message: `User (#${result.insertId}) has been deleted!`,
-            a: sql
+            message: `User (#${userId}) has been deleted!`,
         });
 
     } catch (error) {

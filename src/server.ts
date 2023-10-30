@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import usersRouter from './routes/users';
+import productsRouter from './routes/products';
+import requestsRouter from './routes/requests';
 import cookieParse from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -19,6 +21,8 @@ app.get("/", async (req: Request, res: Response) => {
 });
 
 app.use(usersRouter);
+app.use(productsRouter);
+app.use(requestsRouter);
 
 app.listen(port, () => {
     console.log("Listening at port: " + port);

@@ -11,7 +11,7 @@ export async function errorHandler(resObj: Response, errorString: string, errorT
     
     // custom errors
     if (errorString.includes("customError:")) {
-        errorString = errorString.replace("Error: ", "").replace("customError: ", "");
+        errorString = errorString.replace("customError: ", "").replace("Error: ", "");
 
         resObj.status(errorType).json({
             message: prefix + errorString,
