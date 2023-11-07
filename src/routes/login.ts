@@ -33,7 +33,6 @@ router.post("/login/:email/:password", async (req: Request, res: Response) => {
 
 
     } catch (error) {
-        console.log(error)
         await errorHandler(res, String(error));
     }
 });
