@@ -35,7 +35,7 @@ export default async function auth (req: Request, res: Response, next: NextFunct
     } catch (error) {
         if (String(error).includes("Cannot read properties of null") || String(error).includes("invalid signature") || String(error).includes("jwt malformed")) {
             return await errorHandler(res, "customError: Invalid Token!");
-        }
+        } 
 
         await errorHandler(res, String(error));
     }
