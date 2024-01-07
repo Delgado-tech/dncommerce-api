@@ -41,6 +41,12 @@ router.get("/users/:id", async (req: Request, res: Response) => {
 
 router.post("/users", async (req: Request, res: Response) => {
   try {
+    if (res.locals.access_level < 4) {
+      throw new Error(
+        "customError: You don't have permission for create a user!"
+      );
+    }
+
     const postValues = Object.values(await userDataProcessing(req));
 
     if (postValues.includes(undefined)) {
@@ -85,6 +91,12 @@ router.post("/users", async (req: Request, res: Response) => {
 
 router.put("/users/:id", async (req: Request, res: Response) => {
   try {
+    if (res.locals.access_level < 4) {
+      throw new Error(
+        "customError: You don't have permission for update a user!"
+      );
+    }
+
     const userId: any = req.params.id;
     if (isNaN(userId)) {
       throw new Error("customError: Invalid Id!");
@@ -156,6 +168,12 @@ router.put("/users/:id", async (req: Request, res: Response) => {
 
 router.delete("/users/:id", async (req: Request, res: Response) => {
   try {
+    if (res.locals.access_level < 4) {
+      throw new Error(
+        "customError: You don't have permission for delete a user!"
+      );
+    }
+
     const userId: any = req.params.id;
     if (isNaN(userId)) {
       throw new Error("customError: Invalid Id!");

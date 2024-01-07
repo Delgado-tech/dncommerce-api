@@ -37,6 +37,8 @@ export default async function auth(
       }
     }
 
+    res.locals.access_level = user[0].access_level;
+
     next();
   } catch (error) {
     if (
